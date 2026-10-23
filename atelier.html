@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101522">
+<title>Atelier avancé · Gestionnaire musical JLB</title>
+<style>
+:root{color-scheme:dark;--bg:#0c0e17;--pane:#171c2b;--line:#34415a;--text:#f5f6fc;--muted:#b4c0da;--accent:#aaa8ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top left,#252445,var(--bg) 40%);font:15px system-ui,sans-serif;color:var(--text)}main{max-width:1160px;margin:auto;padding:32px 18px 80px}h1{font-size:clamp(28px,4vw,42px)}h2{font-size:19px;margin:0 0 8px}h3{font-size:16px}.sub,small{color:var(--muted)}a{color:#c0c2ff}.card{background:var(--pane);border:1px solid var(--line);border-radius:16px;padding:20px;margin:16px 0}.row,.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.toolbar{margin:14px 0}input[type=text],input[type=search],input[type=number],input[type=file],textarea,select{background:#101525;color:white;border:1px solid #4b5775;border-radius:9px;padding:11px;width:100%;max-width:100%;font:inherit}input[type=checkbox]{accent-color:#aaa8ff;width:17px;height:17px}textarea{min-height:95px;resize:vertical}button{background:#3d4a9b;border:1px solid #6975d3;color:white;padding:10px 15px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer}button:hover:not(:disabled){filter:brightness(1.15)}button:disabled{opacity:.45;cursor:not-allowed}.soft{background:#272f45;border-color:#4a5671}.danger{background:#63363b;border-color:#a65b63}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button.active{background:#6865bc}.hidden{display:none!important}.columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}.scroll{max-height:370px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px}.line{display:flex;gap:12px;align-items:center;padding:10px;border-bottom:1px solid #2b354a}.line:last-child{border:0}.line small{display:block;margin-top:4px}.line span{overflow-wrap:anywhere;flex:1}.line:hover{background:#20273a}.notice{border:1px solid #646083;background:#292944;border-radius:10px;padding:12px;color:#e2e0ff;margin:12px 0}.warn{border-color:#9b7b4b;background:#373126;color:#ffe9b2}.ok{border-color:#3c806b;background:#173e34;color:#b5f5df}.error{border-color:#a15c63;background:#472730;color:#ffd4d7}.results{max-height:330px;overflow:auto;background:#101624;border-radius:10px;padding:12px}.results p{margin:6px 0;padding:5px;border-bottom:1px solid #263047}.tag{border:1px solid #52617b;border-radius:999px;padding:4px 8px;font-size:12px}.footer{font-size:12px;color:var(--muted);line-height:1.6}.bar{display:flex;justify-content:space-between;gap:12px;align-items:center}.check{display:flex;gap:9px;align-items:start;padding:10px;background:#242e47;border:1px solid #4c5b89;border-radius:9px}label.caption{display:block;color:var(--muted);font-size:13px;margin:9px 0 5px}@media(max-width:680px){main{padding:14px 10px 50px}.card{padding:13px}}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<main>
+<header>
+<div class="sub">JESÚS LÁZARO BLANCO · Gestionnaire musical</div>
+<h1>Atelier de gestion avancée</h1>
+<p class="sub">Complément au <a href="./">gestionnaire de visibilité existant</a> — chansons, playlists, sections, textes et projets. Tout fonctionne dans ton navigateur, sans installation.</p>
+</header>
+<section class="card">
+<h2>1. Connexion sécurisée à ta chaîne</h2>
+<p class="sub">Utilise le même <b>ID client OAuth</b> que ton gestionnaire actuel. Aucun code secret, mot de passe ou jeton n'est enregistré par ce site.</p>
+<div class="row"><input id="client" type="text" style="flex:1 1 380px" placeholder="ID client OAuth Google (…apps.googleusercontent.com)"><button id="login">Connecter la chaîne</button><button id="logout" class="soft">Déconnecter</button></div>
+<label class="check" style="margin-top:12px"><input id="ownerOk" type="checkbox"><span>Je confirme que je souhaite administrer uniquement <b>ma chaîne musicale JESÚS LÁZARO BLANCO</b>.</span></label>
+<div id="status" class="notice">Non connecté. Connecte la chaîne avant de charger tes vidéos.</div>
+<div class="toolbar"><button id="reload" class="soft">Charger / actualiser les données YouTube</button><span id="counts" class="tag">Aucune donnée</span></div>
+</section>
+<section class="card">
+<h2>2. Choisir une opération</h2>
+<nav class="tabs" aria-label="Outils de gestion">
+<button data-tab="songs" class="active">Chansons</button><button data-tab="playlists" class="soft">Playlists</button><button data-tab="sections" class="soft">Sections</button><button data-tab="texts" class="soft">Descriptions / commentaires</button><button data-tab="import" class="soft">Import Excel</button><button data-tab="projects" class="soft">Projets / sauvegardes</button>
+</nav>
+<div data-pane="songs">
+<h3>Ajouter, retirer ou déplacer plusieurs chansons</h3>
+<input type="search" id="videoFilter" placeholder="Rechercher une chanson…">
+<div class="toolbar"><button id="selectVisible" class="soft">Sélectionner les affichées</button><button id="clearSongs" class="soft">Tout décocher</button><span id="selectedCount" class="tag">0 sélectionnée</span></div>
+<div id="videoList" class="scroll"></div>
+<div class="columns">
+<div><label class="caption">Opération</label><select id="songAction"><option value="add">Ajouter à une playlist</option><option value="move">Déplacer d'une playlist à une autre</option><option value="remove">Retirer d'une playlist</option></select></div>
+<div><label class="caption">Playlist source (déplacement ou retrait)</label><select id="source"></select></div>
+<div><label class="caption">Playlist destination (ajout ou déplacement)</label><select id="destination"></select></div>
+</div>
+<p class="sub">Déplacer signifie : ajouter dans la destination, puis retirer de la source seulement si l'ajout a réussi. La vidéo elle-même n'est jamais supprimée.</p>
+</div>
+<div data-pane="playlists" class="hidden">
+<h3>Créer, renommer, modifier la description ou supprimer une playlist</h3>
+<div class="columns">
+<div><label class="caption">Action</label><select id="playlistAction"><option value="create">Créer une playlist</option><option value="update">Modifier une playlist</option><option value="delete">Supprimer une playlist</option></select></div>
+<div><label class="caption">Playlist existante</label><select id="playlistEditor"></select></div>
+<div><label class="caption">Visibilité</label><select id="playlistPrivacy"><option value="private">Privée</option><option value="unlisted">Non répertoriée</option><option value="public">Publique</option></select></div>
+</div>
+<label class="caption">Titre</label><input id="playlistTitle" type="text" placeholder="Titre de la playlist">
+<label class="caption">Description</label><textarea id="playlistDescription" placeholder="Description (facultative)"></textarea>
+<p class="sub">La suppression d'une playlist est définitive, mais les vidéos restent sur YouTube. Une confirmation renforcée sera demandée.</p>
+</div>
+<div data-pane="sections" class="hidden">
+<h3>Créer et organiser les sections de l'accueil</h3>
+<p class="sub">Une section affiche une ou plusieurs playlists : elle n'est pas un dossier YouTube. Les playlists privées ne peuvent pas y figurer. Les autres types de sections restent inchangés.</p>
+<div id="sectionList" class="scroll"></div>
+<div class="columns">
+<div><label class="caption">Action</label><select id="sectionAction"><option value="create">Créer une section</option><option value="update">Modifier une section existante</option><option value="delete">Supprimer une section</option></select></div>
+<div><label class="caption">Section existante</label><select id="sectionEditor"></select></div>
+<div><label class="caption">Position sur l'accueil (0 = début)</label><input id="sectionPosition" type="number" min="0" max="12" value="0"></div>
+</div>
+<label class="caption">Titre de la section</label><input id="sectionTitle" type="text" placeholder="Ex. Mes textes devenus chansons">
+<label class="caption">Playlists à présenter dans cette section</label><div id="sectionChoices" class="scroll"></div>
+</div>
+<div data-pane="texts" class="hidden">
+<h3>Écrire une description et/ou un commentaire</h3>
+<label class="caption">Vidéo</label><select id="textVideo"></select>
+<label class="check"><input id="writeDescription" type="checkbox" checked><span>Modifier la description sous la vidéo (avec sauvegarde automatique de l'ancienne)</span></label>
+<textarea id="description" placeholder="Description YouTube…"></textarea>
+<label class="check"><input id="writeComment" type="checkbox"><span>Publier un nouveau commentaire sous la vidéo (visible publiquement si les commentaires sont autorisés)</span></label>
+<textarea id="comment" placeholder="Nouveau commentaire…"></textarea>
+<p class="sub">La publication d'un commentaire n'est pas un remplacement : évite les doublons. Un commentaire déjà publié ne sera jamais reposté automatiquement pendant la même session.</p>
+</div>
+<div data-pane="import" class="hidden">
+<h3>Importer ton Excel de classement ou tes textes rédigés avec ChatGPT</h3>
+<div class="columns"><div><label class="caption">Fichier Excel, CSV ou projet JSON</label><input id="importFile" type="file" accept=".xlsx,.xls,.csv,.json"></div>
+<div><label class="caption">Traitement</label><select id="importMode"><option value="category">Classer : ajouter à la playlist indiquée</option><option value="descriptions">Modifier les descriptions uniquement</option><option value="all">Descriptions + publier les commentaires</option></select></div></div>
+<p class="sub">Colonnes acceptées : <b>Titre de la chanson</b>, <b>Playlist de création correspondante</b>, <b>Description YouTube</b>, <b>Commentaire</b>, et idéalement <b>Video ID</b>. Les correspondances de titres ambiguës sont ignorées. Aucune playlist absente n'est créée automatiquement.</p>
+<div class="toolbar"><button id="model" class="soft">Télécharger un modèle CSV</button><span id="importSummary" class="tag">Aucun fichier importé</span></div>
+<div id="importList" class="scroll"></div>
+</div>
+<div data-pane="projects" class="hidden">
+<h3>Projets de réorganisation, sauvegardes et historique</h3>
+<p class="sub">Exporte une photographie des titres, playlists, sections et du tableau importé. Tu peux la reprendre plus tard, sans publier aucun changement. Les descriptions originales sont aussi sauvegardées dans un fichier avant chaque modification groupée.</p>
+<div class="toolbar"><button id="exportProject">Exporter mon projet JSON</button><button id="exportVideos" class="soft">Exporter mon catalogue CSV</button><button id="exportLog" class="soft">Exporter le journal des opérations</button></div>
+<p class="sub">Les modifications réellement exécutées ne sont pas automatiquement annulables en un clic. Les commentaires et suppressions exigent notamment une vigilance particulière.</p>
+</div>
+</section>
+<section class="card">
+<h2>3. Simulation et confirmation</h2>
+<div class="toolbar"><button id="previewBtn">Préparer l'aperçu (sans publication)</button><span id="simulationSummary" class="tag">Rien de préparé</span></div>
+<div id="previewList" class="results"><p class="sub">Aucune opération préparée.</p></div>
+<label class="check" style="margin-top:14px"><input id="finalConfirm" type="checkbox"><span>J'ai relu les changements ci-dessus et <b>j'autorise leur application réelle</b> à ma chaîne YouTube.</span></label>
+<div class="toolbar"><button id="applyBtn" disabled>Appliquer les modifications confirmées</button><button id="clearPreview" class="soft">Annuler l'aperçu</button></div>
+<p class="sub">Le quota de l'API YouTube s'applique ; les grandes séries peuvent s'arrêter en cours de traitement. Les réussites et les échecs sont récapitulés ci-dessous.</p>
+</section>
+<section class="card"><h2>4. Journal des opérations</h2><div id="log" class="results"><p class="sub">Aucune modification exécutée.</p></div></section>
+<footer class="footer">Application personnelle · APIs Google/YouTube officielles. L'ID client OAuth peut être mémorisé dans ton navigateur ; aucun jeton d'accès, mot de passe, fichier importé ni texte privé n'est téléversé vers un serveur de gestion. Les fichiers XLSX sont lus localement par le navigateur à l'aide de SheetJS (bibliothèque téléchargée à la demande). Les appels d'administration vont directement à Google. L'application n'est pas affiliée à YouTube.</footer>
+</main>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id), EXPECTED_NAME='JESÚS LÁZARO BLANCO',EXPECTED_ID='UCoBJZ4ppIJpDP8gEcYXCOnw';
+const SCOPE='https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl';
+const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’‘]/g,"'").toLowerCase().replace(/\s+/g,' ').trim();
+let token='',expire=0,channel=null,videoRows=[],playlistRows=[],sectionRows=[],cache=new Map(),picked=new Set(),sectionPicked=new Set(),importRows=[],tab='songs',prepared=null,busy=false,history=[];
+const names={public:'Publique',unlisted:'Non répertoriée',private:'Privée'};
+function status(msg,kind=''){const e=$('status');e.className='notice '+kind;e.textContent=msg;}
+function hasToken(){return !!token&&Date.now()<expire;}
+function verified(){return hasToken()&&channel?.id===EXPECTED_ID&&normalize(channel?.snippet?.title)===normalize(EXPECTED_NAME)&&$('ownerOk').checked;}
+function guard(){if(!verified())throw Error('Connecte la bonne chaîne YouTube et coche la confirmation de propriété.');if(busy)throw Error('Une autre opération est en cours.');}
+function error(status,data){return 'YouTube '+status+' : '+(data?.error?.message||'Erreur API inconnue')+(status===403?' (droits ou quota API à vérifier)':'');}
+async function api(path,method='GET',payload=null){if(!hasToken())throw Error('La session Google a expiré. Reconnecte la chaîne.');const options={method,headers:{Authorization:'Bearer '+token},cache:'no-store'};if(payload!==null){options.headers['Content-Type']='application/json';options.body=JSON.stringify(payload);}let response=await fetch('https://www.googleapis.com/youtube/v3/'+path,options);let data=await response.json().catch(()=>({}));if(!response.ok)throw Error(error(response.status,data));return data;}
+function busyState(value){busy=value;for(const e of document.querySelectorAll('button,input,select,textarea'))if(e.id!=='logout')e.disabled=value;if(!value)$('applyBtn').disabled=!prepared?.ops?.length||!$('finalConfirm').checked;}
+function invalidate(){prepared=null;$('simulationSummary').textContent='Rien de préparé';$('previewList').replaceChildren();const p=document.createElement('p');p.className='sub';p.textContent='Aucun aperçu actif. Prépare une nouvelle simulation.';$('previewList').append(p);$('finalConfirm').checked=false;$('applyBtn').disabled=true;}
+function appendText(parent,text,tag='p',cls=''){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;}
+function addLog(text,ok=true){const log=$('log');if(!history.length)log.replaceChildren();history.push({date:new Date().toISOString(),ok,text});appendText(log,(ok?'✓ ':'✗ ')+text,'p',ok?'':'error');log.scrollTop=log.scrollHeight;}
+function filenameDownload(name,value,mime='application/json'){const url=URL.createObjectURL(new Blob([value],{type:mime+';charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3500);}
+function opts(id,pairs){const el=$(id),old=el.value;el.replaceChildren();for(const [value,label] of pairs){const option=document.createElement('option');option.value=value;option.textContent=label;el.append(option);}if(pairs.some(([v])=>v===old))el.value=old;}
+function playlistOptions(){return [['','— Sélectionner une playlist —'],...playlistRows.map(p=>[p.id,p.snippet.title+' · '+(names[p.status?.privacyStatus]||'?')])];}
+function renderPlaylistOptions(){for(const id of ['source','destination','playlistEditor'])opts(id,playlistOptions());renderSectionChoices();}
+async function getAll(path,cap=2000){let all=[],next='';do{const response=await api(path+(next?(path.includes('?')?'&':'?')+'pageToken='+encodeURIComponent(next):''));all.push(...(response.items||[]));next=response.nextPageToken||'';if(all.length>=cap)break;}while(next);return all;}
+async function getItems(plId,refresh=false){if(!plId)throw Error('Sélectionne une playlist.');if(cache.has(plId)&&!refresh)return cache.get(plId);const rows=await getAll('playlistItems?part=snippet,contentDetails&maxResults=50&playlistId='+encodeURIComponent(plId),10000);cache.set(plId,rows);return rows;}
+function itemVideo(item){return item.contentDetails?.videoId||item.snippet?.resourceId?.videoId;}
+async function login(){const id=$('client').value.trim();if(!/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(id))return status('Saisis ton ID client OAuth Google, et non le code secret.','warn');if(!window.google?.accounts?.oauth2)return status('Google Identity Services n’est pas encore chargé. Actualise la page et réessaie.','error');localStorage.setItem('youtubePlaylistClientId',id);const client=google.accounts.oauth2.initTokenClient({client_id:id,scope:SCOPE,prompt:'select_account consent',callback:async res=>{if(res.error)return status('Google a refusé la connexion : '+res.error,'error');token=res.access_token;expire=Date.now()+Math.max(60,Number(res.expires_in||3500)-30)*1000;try{const r=await api('channels?part=snippet,contentDetails&mine=true');const c=r.items?.find(c=>c.id===EXPECTED_ID);if(!c){token='';channel=null;return status('Mauvaise chaîne choisie. Sélectionne JESÚS LÁZARO BLANCO (chaîne de marque), puis recommence. Aucune action autorisée.','error');}channel=c;status('Chaîne confirmée : '+channel.snippet.title+' · '+channel.id+'. Coche la case ci-dessus pour continuer.','ok');}catch(e){status(e.message,'error');}},error_callback:e=>status('Connexion interrompue : '+(e.type||'fenêtre Google fermée'),'warn')});client.requestAccessToken({prompt:'select_account consent'});}
+function logout(){token='';expire=0;channel=null;videoRows=[];playlistRows=[];sectionRows=[];picked.clear();sectionPicked.clear();cache.clear();$('ownerOk').checked=false;renderAll();invalidate();status('Déconnecté. Les jetons OAuth ne sont pas enregistrés.');}
+async function reload(){guard();busyState(true);try{status('Chargement des playlists, sections et vidéos…');const pls=await getAll('playlists?part=snippet,status,contentDetails&mine=true&maxResults=50',2000);const channelInfo=await api('channels?part=contentDetails&mine=true');if(channelInfo.items?.[0]?.id!==EXPECTED_ID)throw Error('Identifiant YouTube inattendu. Chargement arrêté.');const uploadId=channelInfo.items[0].contentDetails?.relatedPlaylists?.uploads;if(!uploadId)throw Error('Playlist des mises en ligne introuvable.');const uploads=await getAll('playlistItems?part=snippet,contentDetails&maxResults=50&playlistId='+encodeURIComponent(uploadId),5000);const ids=[...new Set(uploads.map(itemVideo).filter(Boolean))];let vids=[];for(let i=0;i<ids.length;i+=50){const part=await api('videos?part=snippet,status&id='+encodeURIComponent(ids.slice(i,i+50).join(','))+'&maxResults=50');vids.push(...(part.items||[]));}const secs=await getAll('channelSections?part=snippet,contentDetails&mine=true&maxResults=50',100);playlistRows=pls.sort((a,b)=>a.snippet.title.localeCompare(b.snippet.title,'fr'));videoRows=vids.filter(v=>v.snippet.channelId===EXPECTED_ID).sort((a,b)=>a.snippet.title.localeCompare(b.snippet.title,'fr'));sectionRows=secs;cache.clear();picked.clear();sectionPicked.clear();renderAll();invalidate();status('Chargement terminé. Les opérations nécessitent un aperçu et une confirmation.','ok');}catch(e){status(e.message,'error');}finally{busyState(false);}}
+function renderAll(){renderPlaylistOptions();renderVideos();renderTextOptions();renderSections();renderImport();$('counts').textContent=videoRows.length+' vidéos · '+playlistRows.length+' playlists · '+sectionRows.length+' sections';}
+function renderVideos(){const parent=$('videoList');parent.replaceChildren();const q=normalize($('videoFilter').value),shown=videoRows.filter(x=>normalize(x.snippet.title).includes(q));for(const v of shown){const label=document.createElement('label');label.className='line';const cb=document.createElement('input');cb.type='checkbox';cb.checked=picked.has(v.id);cb.addEventListener('change',()=>{if(cb.checked)picked.add(v.id);else picked.delete(v.id);$('selectedCount').textContent=picked.size+' sélectionnée(s)';invalidate();});const sp=document.createElement('span');appendText(sp,v.snippet.title,'strong');appendText(sp,v.id,'small');label.append(cb,sp);parent.append(label);}if(!shown.length)appendText(parent,'Aucune vidéo chargée ou trouvée.');$('selectedCount').textContent=picked.size+' sélectionnée(s)';}
+function renderTextOptions(){opts('textVideo',[['','— Sélectionner une vidéo —'],...videoRows.map(v=>[v.id,v.snippet.title])]);}
+function populateText(){const v=videoRows.find(x=>x.id===$('textVideo').value);$('description').value=v?.snippet?.description||'';$('comment').value='';invalidate();}
+function populatePlaylist(){const p=playlistRows.find(x=>x.id===$('playlistEditor').value);if(p){$('playlistTitle').value=p.snippet.title;$('playlistDescription').value=p.snippet.description||'';$('playlistPrivacy').value=p.status.privacyStatus;}invalidate();}
+function renderSectionChoices(){const parent=$('sectionChoices');parent.replaceChildren();for(const p of playlistRows){const label=document.createElement('label');label.className='line';const cb=document.createElement('input');cb.type='checkbox';cb.disabled=p.status.privacyStatus==='private';cb.checked=sectionPicked.has(p.id);cb.title=cb.disabled?'Une playlist privée ne peut pas apparaître dans une section':'';cb.addEventListener('change',()=>{if(cb.checked)sectionPicked.add(p.id);else sectionPicked.delete(p.id);invalidate();});const span=document.createElement('span');appendText(span,p.snippet.title,'strong');appendText(span,names[p.status.privacyStatus]||'Visibilité inconnue','small');label.append(cb,span);parent.append(label);}}
+function renderSections(){opts('sectionEditor',[['','— Nouvelle section —'],...sectionRows.map(s=>[s.id,(s.snippet?.title||s.snippet?.type||s.id)+' · '+s.snippet?.type])]);const parent=$('sectionList');parent.replaceChildren();for(const sec of [...sectionRows].sort((a,b)=>(a.snippet?.position??99)-(b.snippet?.position??99))){const row=document.createElement('div');row.className='line';const span=document.createElement('span');appendText(span,sec.snippet?.title||'Section sans titre','strong');appendText(span,(sec.snippet?.type||'?')+' · position '+(sec.snippet?.position??'?')+' · '+(sec.contentDetails?.playlists?.length||0)+' playlist(s)','small');const b=document.createElement('button');b.className='soft';b.textContent='Modifier';b.onclick=()=>{$('sectionEditor').value=sec.id;populateSection();};row.append(span,b);parent.append(row);}if(!sectionRows.length)appendText(parent,'Aucune section renvoyée par YouTube.');}
+function populateSection(){const s=sectionRows.find(x=>x.id===$('sectionEditor').value);sectionPicked=new Set(s?.contentDetails?.playlists||[]);$('sectionTitle').value=s?.snippet?.title||'';$('sectionPosition').value=s?.snippet?.position??sectionRows.length;renderSectionChoices();invalidate();}
+// --- Importation CSV/XLSX : lecture locale ; correspondance stricte par ID ou titre unique. ---
+function parseDelimited(text){text=text.replace(/^\uFEFF/,'');const first=text.split(/\r?\n/,1)[0];const delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';let result=[],row=[],field='',quoted=false;for(let i=0;i<text.length;i++){let c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){field+='"';i++;}else if(c==='"')quoted=false;else field+=c;}else if(c==='"')quoted=true;else if(c===delimiter){row.push(field);field='';}else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);if(row.some(s=>String(s).trim()))result.push(row);row=[];field='';}else field+=c;}row.push(field);if(row.some(s=>String(s).trim()))result.push(row);return result;}
+function columnKey(s){return normalize(s).replace(/[^a-z0-9]/g,'');}
+function matrixRows(matrix){if(!Array.isArray(matrix)||!matrix.length)return [];if(!Array.isArray(matrix[0]))return matrix;const hi=matrix.findIndex(row=>row.some(x=>/titre|title|chanson|video.?id/i.test(String(x))));if(hi===-1)throw Error('Le fichier ne contient pas de ligne de titres de colonnes reconnaissable.');const keys=matrix[hi].map(columnKey);const ix=terms=>keys.findIndex(k=>terms.some(t=>k.includes(t)));const col={title:ix(['titredelachanson','titreyoutube','titre','chanson']),id:ix(['videoid','idyoutube','identifiantyoutube']),playlist:ix(['playlistdecreationcorrespondante','playlistcorrespondante','playlistdedestination','playlist']),description:ix(['descriptionyoutube','description']),comment:ix(['commentairepropose','commentaireyoutube','commentaire'])};return matrix.slice(hi+1).filter(r=>r.some(x=>String(x).trim())).map(r=>{let row={};for(const [k,n] of Object.entries(col))row[k]=n<0?'':String(r[n]??'').trim();return row;}).filter(r=>r.title||r.id);}
+async function readImported(file){if(!file)return;try{const ext=file.name.toLowerCase();let matrix;if(ext.endsWith('.csv'))matrix=parseDelimited(await file.text());else if(ext.endsWith('.json')){const js=JSON.parse(await file.text());if(js.format==='JLB-PROJET-1'){if(js.channelId!==EXPECTED_ID)throw Error('Projet destiné à une autre chaîne YouTube.');matrix=js.importRows||[];}else if(Array.isArray(js))matrix=js;else throw Error('Format JSON inconnu.');}else{if(!window.XLSX)await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';script.onload=resolve;script.onerror=()=>reject(Error('Le lecteur XLSX n’a pas pu être chargé. Exporte ton fichier en CSV et recommence.'));document.head.append(script);});const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'});matrix=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{header:1,defval:''});}importRows=matrixRows(matrix);renderImport();invalidate();status(importRows.length+' ligne(s) chargée(s) depuis '+file.name+'. Rien n’a été publié.','ok');}catch(e){status(e.message,'error');}}
+function matchingVideo(row){if(row.id){const matches=videoRows.filter(v=>v.id===row.id);return matches.length===1?matches[0]:null;}let m=videoRows.filter(v=>normalize(v.snippet.title)===normalize(row.title));if(m.length===1)return m[0];if(m.length>1)return null;const clean=s=>normalize(s).replace(/\s*\((version|francais|espagnol)[^)]*\)\s*$/,'').trim();m=videoRows.filter(v=>clean(v.snippet.title)===clean(row.title));return m.length===1?m[0]:null;}
+function matchingPlaylist(row){const p=playlistRows.filter(p=>normalize(p.snippet.title)===normalize(row.playlist));return p.length===1?p[0]:null;}
+function renderImport(){const parent=$('importList');parent.replaceChildren();let found=0,missingPlaylist=0;for(const row of importRows.slice(0,200)){const v=matchingVideo(row),p=matchingPlaylist(row);if(v)found++;if(row.playlist&&!p)missingPlaylist++;const div=document.createElement('div');div.className='line';const sp=document.createElement('span');appendText(sp,(v?'✓ ':'⚠ ')+(row.title||row.id),'strong');appendText(sp,row.playlist?(p?'→ '+p.snippet.title:'Playlist introuvable : '+row.playlist):row.description?'Description fournie':row.comment?'Commentaire fourni':'Aucun texte','small');div.append(sp);parent.append(div);}if(!importRows.length)appendText(parent,'Importe un fichier Excel ou CSV pour afficher les correspondances.');$('importSummary').textContent=importRows.length+' lignes · '+found+' vidéos identifiées · '+missingPlaylist+' playlists absentes';}
+// --- Construction d'une simulation. Aucune écriture API dans cette phase. ---
+async function preview(){try{guard();busyState(true);let ops=[],ignored=[];
+if(tab==='songs'){
+ const kind=$('songAction').value,from=$('source').value,to=$('destination').value;
+ if(!picked.size)throw Error('Sélectionne au moins une chanson.');if(kind!=='remove'&&!to)throw Error('Choisis une playlist destination.');if(kind!=='add'&&!from)throw Error('Choisis une playlist source.');if(kind==='move'&&from===to)throw Error('La source et la destination doivent être différentes.');
+ const sourceItems=kind!=='add'?await getItems(from,true):[],destItems=kind!=='remove'?await getItems(to,true):[];
+ for(const id of picked){const vid=videoRows.find(x=>x.id===id);if(!vid)continue;const src=sourceItems.find(x=>itemVideo(x)===id),already=destItems.some(x=>itemVideo(x)===id);
+ if(kind==='add'){if(already)ignored.push(vid.snippet.title+' déjà dans la destination');else ops.push({type:'add',id,to,name:vid.snippet.title});}
+ if(kind==='remove'){if(src)ops.push({type:'remove',id,from,itemId:src.id,name:vid.snippet.title});else ignored.push(vid.snippet.title+' absent de la source');}
+ if(kind==='move'){if(src)ops.push({type:'move',id,from,to,already,itemId:src.id,name:vid.snippet.title});else ignored.push(vid.snippet.title+' absent de la source');}
+ }
+}
+if(tab==='playlists'){
+ const act=$('playlistAction').value,p=playlistRows.find(x=>x.id===$('playlistEditor').value),title=$('playlistTitle').value.trim(),description=$('playlistDescription').value,privacy=$('playlistPrivacy').value;
+ if(act!=='create'&&!p)throw Error('Choisis une playlist existante.');if(act!=='delete'&&!title)throw Error('Le titre de playlist est obligatoire.');
+ if(act==='create'){if(playlistRows.some(p=>normalize(p.snippet.title)===normalize(title)))throw Error('Cette playlist existe déjà.');ops.push({type:'pl-create',title,description,privacy,name:title});}
+ if(act==='update')ops.push({type:'pl-update',id:p.id,title,description,privacy,name:p.snippet.title});
+ if(act==='delete')ops.push({type:'pl-delete',id:p.id,name:p.snippet.title});
+}
+if(tab==='sections'){
+ const act=$('sectionAction').value,s=sectionRows.find(x=>x.id===$('sectionEditor').value),title=$('sectionTitle').value.trim(),position=Math.max(0,Math.floor(Number($('sectionPosition').value)||0)),ids=[...sectionPicked];
+ if(act!=='create'&&!s)throw Error('Choisis une section existante.');if(act!=='delete'&&(!title||!ids.length))throw Error('Indique un titre et coche au moins une playlist.');
+ if(ids.some(id=>playlistRows.find(p=>p.id===id)?.status?.privacyStatus==='private'))throw Error('Les playlists privées ne peuvent pas figurer dans une section.');
+ if(act==='create')ops.push({type:'sec-create',title,position,ids,name:title});
+ if(act==='update'){if(s.snippet?.type!=='multiplePlaylists')throw Error('La section choisie n’est pas de type « plusieurs playlists ». Pour la préserver, utilise YouTube Studio.');ops.push({type:'sec-update',id:s.id,title,position,ids,name:s.snippet.title});}
+ if(act==='delete')ops.push({type:'sec-delete',id:s.id,name:s.snippet?.title||s.snippet?.type||s.id});
+}
+if(tab==='texts'){
+ const v=videoRows.find(x=>x.id===$('textVideo').value),description=$('description').value,comment=$('comment').value.trim();if(!v)throw Error('Choisis une vidéo.');
+ if($('writeDescription').checked&&description!==(v.snippet.description||''))ops.push({type:'description',id:v.id,name:v.snippet.title,description,before:v.snippet.description||''});
+ if($('writeComment').checked&&comment)ops.push({type:'comment',id:v.id,name:v.snippet.title,comment});
+}
+if(tab==='import'){
+ if(!importRows.length)throw Error('Importe d’abord un tableau.');const mode=$('importMode').value,seen=new Set();let categories=[];
+ for(const row of importRows){const v=matchingVideo(row);if(!v){ignored.push('Titre inconnu ou ambigu : '+(row.title||row.id));continue;}
+ if(mode==='category'){
+   if(!row.playlist){ignored.push(v.snippet.title+' : pas de playlist indiquée');continue;}
+   const p=matchingPlaylist(row);if(!p){ignored.push(v.snippet.title+' : playlist absente « '+row.playlist+' »');continue;}
+   const key=p.id+'|'+v.id;if(seen.has(key))continue;seen.add(key);categories.push({type:'add',id:v.id,to:p.id,name:v.snippet.title});
+ }else{
+   if(seen.has(v.id)){ignored.push(v.snippet.title+' : doublon dans le tableau');continue;}
+   seen.add(v.id);
+   if(row.description&&row.description!==(v.snippet.description||''))ops.push({type:'description',id:v.id,name:v.snippet.title,description:row.description,before:v.snippet.description||''});
+   if(mode==='all'&&row.comment&&!row._posted)ops.push({type:'comment',id:v.id,name:v.snippet.title,comment:row.comment,row});
+ }
+ }
+ if(mode==='category'){const grouped=new Map();for(const op of categories){if(!grouped.has(op.to))grouped.set(op.to,await getItems(op.to,true));if(grouped.get(op.to).some(x=>itemVideo(x)===op.id))ignored.push(op.name+' : déjà classée dans la destination');else ops.push(op);}
+ }
+}
+if(tab==='projects')throw Error('Dans « Projets », utilise les boutons d’exportation. Il n’y a pas de modification à simuler.');
+prepared={ops,ignored,tab,at:Date.now()};$('previewList').replaceChildren();for(const op of ops){const dest=playlistRows.find(p=>p.id===op.to);appendText($('previewList'),labelOp(op)+(dest?' → '+dest.snippet.title:''));}
+if(ignored.length)appendText($('previewList'),'Éléments ignorés ('+ignored.length+') : '+ignored.slice(0,10).join(' · '),'p','warn');
+if(!ops.length)appendText($('previewList'),'Aucune modification nécessaire.');$('simulationSummary').textContent=ops.length+' opération(s) · '+ignored.length+' ignorée(s)';$('finalConfirm').checked=false;$('applyBtn').disabled=true;status('Simulation prête. Aucune donnée envoyée à YouTube. Relis l’aperçu.','ok');
+}catch(e){prepared=null;status('Simulation impossible : '+e.message,'error');}finally{busyState(false);}}
+function labelOp(op){return ({add:'Ajouter à la playlist',move:'Déplacer vers une playlist',remove:'Retirer de la playlist','pl-create':'Créer playlist','pl-update':'Modifier playlist','pl-delete':'SUPPRIMER playlist','sec-create':'Créer section','sec-update':'Modifier section','sec-delete':'SUPPRIMER section',description:'Mettre à jour description',comment:'Publier un commentaire'})[op.type]+' : '+op.name;}
+// --- Exécution après confirmation explicite, avec préservation de la vidéo et des métadonnées. ---
+async function perform(op){
+ if(op.type==='add'||op.type==='move'){
+   // Toujours relire la destination : ne pas ajouter deux fois la même vidéo.
+   const existing=await getItems(op.to,true);
+   if(!existing.some(it=>itemVideo(it)===op.id)){
+     await api('playlistItems?part=snippet','POST',{snippet:{playlistId:op.to,resourceId:{kind:'youtube#video',videoId:op.id}}});
+     cache.delete(op.to);
+   }
+   // Déplacer : retirer de la source uniquement APRÈS la présence vérifiée dans la destination.
+   if(op.type==='move'){
+     const from=await getItems(op.from,true),item=from.find(it=>itemVideo(it)===op.id);
+     if(item)await api('playlistItems?id='+encodeURIComponent(item.id),'DELETE');
+     cache.delete(op.from);
+   }
+   return;
+ }
+ if(op.type==='remove'){await api('playlistItems?id='+encodeURIComponent(op.itemId),'DELETE');cache.delete(op.from);return;}
+ if(op.type==='pl-create'){await api('playlists?part=snippet,status','POST',{snippet:{title:op.title,description:op.description},status:{privacyStatus:op.privacy}});return;}
+ if(op.type==='pl-update'){
+   const prior=playlistRows.find(p=>p.id===op.id);
+   const snippet={title:op.title,description:op.description};if(prior?.snippet?.defaultLanguage)snippet.defaultLanguage=prior.snippet.defaultLanguage;
+   await api('playlists?part=snippet,status','PUT',{id:op.id,snippet,status:{privacyStatus:op.privacy}});return;
+ }
+ if(op.type==='pl-delete'){await api('playlists?id='+encodeURIComponent(op.id),'DELETE');return;}
+ if(op.type==='sec-create'){await api('channelSections?part=snippet,contentDetails','POST',{snippet:{type:'multiplePlaylists',title:op.title,position:op.position},contentDetails:{playlists:op.ids}});return;}
+ if(op.type==='sec-update'){await api('channelSections?part=snippet,contentDetails','PUT',{id:op.id,snippet:{type:'multiplePlaylists',title:op.title,position:op.position},contentDetails:{playlists:op.ids}});return;}
+ if(op.type==='sec-delete'){await api('channelSections?id='+encodeURIComponent(op.id),'DELETE');return;}
+ if(op.type==='description'){
+   const video=videoRows.find(v=>v.id===op.id);if(!video)throw Error('La vidéo n’existe plus dans les données chargées.');
+   const s=video.snippet;
+   const snippet={title:s.title,categoryId:s.categoryId,description:op.description};
+   if(Array.isArray(s.tags))snippet.tags=s.tags;
+   if(s.defaultLanguage)snippet.defaultLanguage=s.defaultLanguage;
+   if(!snippet.categoryId)throw Error('Identifiant de catégorie vidéo manquant. Modification ignorée pour protéger les métadonnées.');
+   await api('videos?part=snippet','PUT',{id:op.id,snippet});s.description=op.description;return;
+ }
+ if(op.type==='comment'){
+   await api('commentThreads?part=snippet','POST',{snippet:{channelId:EXPECTED_ID,videoId:op.id,topLevelComment:{snippet:{textOriginal:op.comment}}}});
+   if(op.row)op.row._posted=true;
+   return;
+ }
+ throw Error('Type d’opération non pris en charge : '+op.type);
+}
+async function apply(){try{
+ guard();if(!prepared?.ops?.length)throw Error('Il n’y a aucune modification à appliquer.');if(!$('finalConfirm').checked)throw Error('Lis et confirme l’aperçu avant publication.');
+ const operations=prepared.ops;
+ // Les opérations irréversibles ne peuvent pas être lancées par un simple clic malheureux.
+ if(operations.some(x=>x.type==='pl-delete'||x.type==='sec-delete')){
+   const response=prompt('Suppression définitive. Pour confirmer, saisis exactement : SUPPRIMER');if(response!=='SUPPRIMER')return;
+ }else if(!confirm('Appliquer '+operations.length+' opération(s) à la chaîne '+EXPECTED_NAME+' ? Les descriptions et commentaires peuvent être visibles immédiatement.'))return;
+ const backups=operations.filter(o=>o.type==='description');
+ if(backups.length)filenameDownload('JLB_sauvegarde_descriptions_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({format:'JLB-DESCRIPTIONS-1',channelId:EXPECTED_ID,createdAt:new Date().toISOString(),items:backups.map(o=>({videoId:o.id,title:o.name,description:o.before}))},null,2));
+ prepared=null;$('applyBtn').disabled=true;$('finalConfirm').checked=false;
+ busyState(true);let good=0,bad=0,interrupted=false;
+ for(const op of operations){
+   if(!verified()){addLog('Session expirée ou confirmation retirée : opération interrompue.',false);interrupted=true;break;}
+   try{await perform(op);good++;addLog(labelOp(op));}catch(e){bad++;addLog(labelOp(op)+' — '+e.message,false);}
+ }
+ cache.clear();status('Opération terminée : '+good+' réussie(s), '+bad+' échec(s)'+(interrupted?', session interrompue':'')+'. Consulte le journal.','ok');
+ // Rafraîchir les tableaux, mais ne pas effacer le journal en cas d'erreur réseau.
+ try{const pls=await getAll('playlists?part=snippet,status,contentDetails&mine=true&maxResults=50');playlistRows=pls.sort((a,b)=>a.snippet.title.localeCompare(b.snippet.title,'fr'));sectionRows=await getAll('channelSections?part=snippet,contentDetails&mine=true&maxResults=50',100);renderAll();}catch(e){addLog('Actualisation des listes : '+e.message,false);}
+}catch(e){status(e.message,'error');}finally{busyState(false);invalidate();}}
+function switchTab(t){tab=t;for(const b of document.querySelectorAll('[data-tab]')){b.classList.toggle('active',b.dataset.tab===t);b.classList.toggle('soft',b.dataset.tab!==t);}for(const e of document.querySelectorAll('[data-pane]'))e.classList.toggle('hidden',e.dataset.pane!==t);invalidate();}
+function escapeCsv(s){return '"'+String(s??'').replace(/"/g,'""')+'"';}
+function exportProject(){const project={format:'JLB-PROJET-1',createdAt:new Date().toISOString(),channelId:EXPECTED_ID,playlists:playlistRows.map(p=>({id:p.id,title:p.snippet.title,privacy:p.status.privacyStatus})),sections:sectionRows.map(s=>({id:s.id,title:s.snippet?.title,type:s.snippet?.type,position:s.snippet?.position,playlists:s.contentDetails?.playlists||[]})),videos:videoRows.map(v=>({id:v.id,title:v.snippet.title})),importRows};filenameDownload('JLB_projet_organisation_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(project,null,2));status('Projet téléchargé. Rien n’a changé sur YouTube.','ok');}
+function exportVideos(){const result=['Video ID,Titre de la chanson,Description YouTube',...videoRows.map(v=>[v.id,v.snippet.title,v.snippet.description||''].map(escapeCsv).join(','))].join('\r\n');filenameDownload('JLB_catalogue_videos.csv','\uFEFF'+result,'text/csv');}
+function exportLog(){filenameDownload('JLB_journal_operations_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(history,null,2));}
+function importSample(){const sample=['Video ID,Titre de la chanson,Playlist de création correspondante,Description YouTube,Commentaire','"","Au bout du fil","Créations musicales à partir de mes textes littéraires","Description à relire","Commentaire à relire"'].join('\r\n');filenameDownload('JLB_modele_import.csv','\uFEFF'+sample,'text/csv');}
+function init(){
+ $('client').value=localStorage.getItem('youtubePlaylistClientId')||'';
+ $('login').onclick=login;$('logout').onclick=logout;$('reload').onclick=reload;
+ for(const b of document.querySelectorAll('[data-tab]'))b.onclick=()=>switchTab(b.dataset.tab);
+ $('videoFilter').addEventListener('input',renderVideos);
+ $('selectVisible').onclick=()=>{for(const v of videoRows.filter(v=>normalize(v.snippet.title).includes(normalize($('videoFilter').value))))picked.add(v.id);renderVideos();invalidate();};
+ $('clearSongs').onclick=()=>{picked.clear();renderVideos();invalidate();};
+ $('playlistEditor').addEventListener('change',populatePlaylist);
+ $('sectionEditor').addEventListener('change',populateSection);
+ $('textVideo').addEventListener('change',populateText);
+ $('importFile').addEventListener('change',e=>readImported(e.target.files?.[0]));
+ $('model').onclick=importSample;$('exportProject').onclick=exportProject;$('exportVideos').onclick=exportVideos;$('exportLog').onclick=exportLog;
+ $('previewBtn').onclick=preview;$('applyBtn').onclick=apply;$('clearPreview').onclick=invalidate;
+ $('finalConfirm').addEventListener('change',()=>{$('applyBtn').disabled=busy||!prepared?.ops?.length||!$('finalConfirm').checked;});
+ for(const e of document.querySelectorAll('input,select,textarea')){
+   if(['client','importFile','ownerOk','finalConfirm','videoFilter'].includes(e.id))continue;
+   e.addEventListener('input',invalidate);
+   e.addEventListener('change',invalidate);
+ }
+ // La confirmation propriétaire est spécifique à chaque session Google.
+ $('ownerOk').addEventListener('change',invalidate);
+ renderAll();status('Prêt. Connecte JESÚS LÁZARO BLANCO et charge les données YouTube. Aucune modification automatique.');
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body>
+</html>
